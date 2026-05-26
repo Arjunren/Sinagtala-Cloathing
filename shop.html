@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinagtala | Shop</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        brand: {
+                            text: '#1a1a1a',
+                            muted: '#757575',
+                            border: '#eeeeee',
+                            accent: '#000000',
+                        }
+                    },
+                    boxShadow: {
+                        'glass': '0 30px 60px rgba(0, 0, 0, 0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html { scroll-behavior: smooth; }
+
+        /* Hide scrollbars for swipeable areas */
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Filter Active States */
+        .filter-item { transition: all 0.3s ease; }
+        .filter-item.active { color: var(--text, #1a1a1a); font-weight: 600; }
+
+        /* JS Toggle States */
+        .mega-menu.active, .search-overlay.active {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #bagSidebar.active, #wishlistSidebar.active {
+            right: 0;
+        }
+        .mobile-bottom-nav {
+            transform: translateY(150%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .mobile-bottom-nav.scrolled-down {
+            transform: translateY(0);
+        }
+
+        /* Navbar Scrolled State */
+        #navbar.glass {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #eeeeee;
+            color: #1a1a1a !important;
+        }
+
+        /* Out of Stock Logic */
+        .out-of-stock-card img {
+            filter: grayscale(100%);
+            opacity: 0.5;
+        }
+        
+        /* Like Button Animation */
+        .btn-like svg { transition: all 0.3s ease; fill: none; stroke: currentColor; stroke-width: 2;}
+        .btn-like.liked svg { fill: #ff4444; stroke: #ff4444; transform: scale(1.15); }
+        
+        /* Product Page Active Elements */
+        .thumb-strip-vertical img.active { opacity: 1; border-color: #000; }
+        .chip-item.selected { border-color: #000; background: #000; color: #fff; }
+        .color-dot.selected { transform: scale(1.15); border-color: #000; }
+    </style>
+</head>
+<body class="font-sans text-brand-text antialiased bg-white overflow-x-hidden">
+
+    <div id="announcementBar" class="hidden bg-brand-accent text-white text-center py-2 text-xs font-semibold uppercase tracking-widest"></div>
+
+    <nav id="navbar" class="fixed top-0 w-full z-50 flex items-center justify-between px-6 py-4 lg:px-16 transition-all duration-500 text-white hover:text-brand-text hover:bg-white/95 hover:backdrop-blur-md hover:border-b hover:border-brand-border">
+        <div class="hidden lg:flex items-center gap-10 text-sm uppercase tracking-wide font-medium">
+            <a href="shop.html" class="nav-item hover:opacity-50 transition-opacity">Shop</a>
+            <div class="nav-item-wrap">
+                <span class="nav-item cursor-pointer hover:opacity-50 transition-opacity" onclick="toggleMegaMenu(event)">Collections</span>
+            </div>
+            <a href="index.html#footerSection" class="nav-item hover:opacity-50 transition-opacity">About</a>
+        </div>
+        
+        <a href="index.html" class="flex items-center gap-3 mx-auto lg:mx-0 group cursor-pointer">
+            <svg class="w-6 h-6 lg:w-8 lg:h-8 fill-current transition-transform duration-700 group-hover:rotate-180" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 0L13.5 8.5L22 10L13.5 11.5L12 20L10.5 11.5L2 10L10.5 8.5L12 0Z" />
+            </svg>
+            <span class="font-serif text-xl lg:text-3xl tracking-[0.15em] font-medium uppercase mt-1">Sinagtala</span>
+        </a>
+        <div class="flex items-center gap-6">
+            <div class="nav-icon cursor-pointer hover:opacity-50 transition-opacity" onclick="toggleSearch()">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+            <div class="nav-icon cursor-pointer hover:opacity-50 transition-opacity relative hidden lg:block" onclick="toggleWishlist()">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                <span id="wishlistCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+            </div>
+            <div class="nav-icon cursor-pointer hover:opacity-50 transition-opacity relative bag-btn" onclick="toggleBag()">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                <span id="bagCount" class="absolute -top-2 -right-2 bg-brand-accent text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+            </div>
+        </div>
+    </nav>
+
+    <div id="megaMenu" class="mega-menu fixed top-[60px] lg:top-[75px] left-0 w-full h-[calc(100vh-60px)] lg:h-[80vh] bg-white border-b border-brand-border shadow-glass invisible opacity-0 -translate-y-2 transition-all duration-400 z-[99] flex flex-col lg:flex-row gap-10 lg:gap-24 px-8 lg:px-[10vw] pt-8 lg:pt-16 pb-24 overflow-y-auto lg:overflow-hidden" onclick="event.stopPropagation()">
+        <div class="flex flex-col sm:flex-row gap-8 lg:w-1/4 lg:border-r border-brand-border lg:pr-16 shrink-0">
+            <div class="flex flex-col gap-4">
+                <span class="text-xs text-brand-muted tracking-[2px] uppercase font-semibold mb-2">Categories</span>
+                <a href="shop.html" class="text-sm uppercase tracking-wide font-medium text-gray-700 hover:text-brand-accent hover:pl-1 transition-all">Professional</a>
+                <a href="shop.html" class="text-sm uppercase tracking-wide font-medium text-gray-700 hover:text-brand-accent hover:pl-1 transition-all">Modern</a>
+                <a href="shop.html" class="text-sm uppercase tracking-wide font-medium text-gray-700 hover:text-brand-accent hover:pl-1 transition-all">Seasonal</a>
+            </div>
+            <div class="flex flex-col gap-4">
+                <span class="text-xs text-brand-muted tracking-[2px] uppercase font-semibold mb-2">Highlights</span>
+                <a href="index.html#featuredGridSection" class="text-sm uppercase tracking-wide font-medium text-gray-700 hover:text-brand-accent hover:pl-1 transition-all">Featured</a>
+                <a href="index.html#newArrivalsGridSection" class="text-sm uppercase tracking-wide font-medium text-gray-700 hover:text-brand-accent hover:pl-1 transition-all">New Arrivals</a>
+                <a href="index.html#shopTarget" class="text-sm uppercase tracking-wide font-medium text-gray-700 hover:text-brand-accent hover:pl-1 transition-all">Bestsellers</a>
+            </div>
+        </div>
+        <div id="megaMenuProducts" class="flex-grow flex gap-6 overflow-x-auto snap-x snap-mandatory pb-4 hide-scrollbar"></div>
+    </div>
+
+    <div class="mobile-bottom-nav lg:hidden fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-brand-border px-6 py-3 flex justify-around items-center z-[100] pb-[env(safe-area-inset-bottom,0.8rem)]">
+        <a href="shop.html" class="m-nav-item active flex flex-col items-center gap-1 text-[10px] uppercase font-medium tracking-wide text-brand-accent">
+            <svg class="w-5 h-5 stroke-current fill-none stroke-2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span>Shop</span>
+        </a>
+        <div class="m-nav-item flex flex-col items-center gap-1 text-[10px] uppercase font-medium tracking-wide text-brand-muted hover:text-brand-accent" onclick="toggleMegaMenu(event)">
+            <svg class="w-5 h-5 stroke-current fill-none stroke-2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>Collection</span>
+        </div>
+        <a href="index.html#footerSection" class="m-nav-item flex flex-col items-center gap-1 text-[10px] uppercase font-medium tracking-wide text-brand-muted hover:text-brand-accent">
+            <svg class="w-5 h-5 stroke-current fill-none stroke-2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <span>About</span>
+        </a>
+    </div>
+
+    <div id="shopMainView">
+        
+        <div class="relative h-[45vh] lg:h-[60vh] flex items-center justify-center bg-gray-100 overflow-hidden select-none pointer-events-none">
+            <img src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=2000" alt="Shop All Sinagtala" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute inset-0 bg-black/20 z-10"></div>
+            <h1 class="relative z-20 font-serif text-5xl lg:text-[6rem] text-white tracking-widest drop-shadow-lg font-medium">SHOP</h1>
+        </div>
+
+        <div class="text-center my-8 lg:my-12 text-sm text-brand-muted">
+            <a href="index.html" class="hover:text-brand-text transition-colors">Home</a> &nbsp;|&nbsp; <span class="font-semibold text-brand-text">Shop All</span>
+        </div>
+
+        <div id="filterBar" class="flex overflow-x-auto lg:flex-wrap lg:justify-center gap-6 px-6 lg:px-8 pb-6 lg:pb-8 border-b border-brand-border max-w-5xl mx-auto whitespace-nowrap snap-x snap-mandatory hide-scrollbar">
+            <span class="filter-item active snap-start cursor-pointer text-sm text-brand-muted capitalize" onclick="filterCategory('All', this)">All</span>
+            <span class="filter-item snap-start cursor-pointer text-sm text-brand-muted capitalize" onclick="filterCategory('Formal', this)">Formal</span>
+            <span class="filter-item snap-start cursor-pointer text-sm text-brand-muted capitalize" onclick="filterCategory('Business Casual', this)">Business Casual</span>
+            <span class="filter-item snap-start cursor-pointer text-sm text-brand-muted capitalize" onclick="filterCategory('Office Siren', this)">Office Siren</span>
+            <span class="filter-item snap-start cursor-pointer text-sm text-brand-muted capitalize" onclick="filterCategory('Cozy', this)">Cozy</span>
+            <span class="filter-item snap-start cursor-pointer text-sm text-brand-muted capitalize" onclick="filterCategory('Smart Casual', this)">Smart Casual</span>
+            <span class="filter-item snap-start cursor-pointer text-sm text-brand-muted capitalize" onclick="filterCategory('Rainy Season', this)">Rainy Season</span>
+            <span class="filter-item snap-start cursor-pointer text-sm text-brand-muted capitalize" onclick="filterCategory('Summer Season', this)">Summer Season</span>
+        </div>
+
+        <div class="max-w-[1400px] mx-auto px-0 lg:px-16 pb-32 pt-10 min-h-[50vh]">
+            <div id="shopGrid" class="flex lg:grid lg:grid-cols-3 gap-6 lg:gap-12 overflow-x-auto lg:overflow-visible snap-x snap-mandatory hide-scrollbar px-6 lg:px-0">
+                <p class="w-full text-center py-16 text-brand-muted col-span-full">Establishing connection to database...</p>
+            </div>
+        </div>
+    </div>
+
+    <section id="productPageView" class="hidden pt-[100px] lg:pt-[120px] px-6 lg:px-16 pb-16 max-w-[1200px] mx-auto min-h-screen">
+        <button onclick="closeProductPage()" class="inline-flex items-center gap-2 text-sm uppercase tracking-wide font-semibold text-brand-text hover:opacity-60 transition-opacity mb-8">
+            <svg viewBox="0 0 24 24" class="w-4 h-4 fill-none stroke-current stroke-2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Back to Store
+        </button>
+        <div id="ppContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 mb-8 items-start"></div>
+        <h3 class="font-serif text-3xl text-center mb-12 border-t border-brand-border pt-16">You May Also Like</h3>
+        <div id="ppSuggestedGrid" class="flex lg:grid lg:grid-cols-4 gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-8 lg:pb-0"></div>
+    </section>
+
+    <footer id="footerSection" class="bg-brand-accent text-white pt-24 px-6 lg:px-16 pb-32 lg:pb-12 mt-16">
+        <div class="max-w-[1600px] mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-20">
+                <div class="lg:col-span-2">
+                    <div class="font-serif text-3xl md:text-4xl font-medium tracking-tight mb-4">Sinagtala</div>
+                    <p class="text-gray-400 text-sm leading-relaxed max-w-sm font-light">Elevating modern essentials. Designed for the sophisticated professional who demands both style and substance.</p>
+                </div>
+                <div>
+                    <h4 class="font-sans text-xs uppercase tracking-[2px] font-semibold mb-6">About</h4>
+                    <ul class="space-y-4">
+                        <li><a href="#" class="text-gray-400 text-sm font-light hover:text-white transition-colors">Collection</a></li>
+                        <li><a href="#" class="text-gray-400 text-sm font-light hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 text-sm font-light hover:text-white transition-colors">Terms & Condition</a></li>
+                        <li><a href="#" class="text-gray-400 text-sm font-light hover:text-white transition-colors">Copyright Notice</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-sans text-xs uppercase tracking-[2px] font-semibold mb-6">Help & Support</h4>
+                    <ul class="space-y-4">
+                        <li><a href="#" class="text-gray-400 text-sm font-light hover:text-white transition-colors">Orders & Shipping</a></li>
+                        <li><a href="#" class="text-gray-400 text-sm font-light hover:text-white transition-colors">FAQ's</a></li>
+                        <li><a href="#" class="text-gray-400 text-sm font-light hover:text-white transition-colors">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="lg:col-span-1">
+                    <h4 class="font-sans text-xs uppercase tracking-[2px] font-semibold mb-6">Stay Connected</h4>
+                    <div class="flex flex-col gap-6">
+                        <p class="text-gray-400 text-sm leading-relaxed font-light">Subscribe to receive updates, access to exclusive deals, and more.</p>
+                        <form id="footerNewsletter" class="flex border-b border-gray-600 focus-within:border-white transition-colors pb-2">
+                            <input type="email" class="bg-transparent flex-grow text-sm text-white placeholder-gray-500 outline-none" placeholder="Enter your email address" required autocomplete="off">
+                            <button type="submit" class="bg-transparent text-white text-xs font-semibold tracking-wide uppercase ml-4 hover:opacity-70 transition-opacity">Subscribe</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col-reverse md:flex-row justify-between items-start md:items-center border-t border-gray-800 pt-8 text-gray-400 text-xs font-light gap-6">
+                <span>&copy; 2026 Sinagtala Official Store. All rights reserved.</span>
+                <div class="flex gap-6 items-center">
+                    <svg class="w-5 h-5 fill-current hover:text-white transition-colors cursor-pointer" viewBox="0 0 24 24"><path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/></svg>
+                    </div>
+            </div>
+        </div>
+    </footer>
+
+    <div id="searchOverlay" class="fixed top-0 lg:top-[75px] left-0 w-full h-screen lg:h-[90vh] bg-white lg:border-y border-brand-border shadow-glass z-[10001] lg:z-[99] invisible opacity-0 -translate-y-2 transition-all duration-400 p-6 lg:p-14 overflow-y-auto">
+        <div class="max-w-6xl mx-auto flex flex-col">
+            <div class="flex justify-between items-center mb-8 lg:mb-12">
+                <div class="flex-grow mr-6 lg:mr-16">
+                    <input type="text" id="searchInput" class="w-full text-2xl md:text-3xl lg:text-4xl border-b border-brand-border focus:border-brand-accent bg-transparent pb-2 font-serif text-brand-text outline-none transition-colors placeholder:text-gray-300 placeholder:font-sans placeholder:font-light" placeholder="Search for products, categories..." onkeyup="performSearch(event)" autocomplete="off">
+                </div>
+                <div class="text-4xl text-brand-muted font-light cursor-pointer hover:rotate-90 hover:text-brand-accent transition-transform leading-none" onclick="toggleSearch()">×</div>
+            </div>
+            <div>
+                <h4 id="searchHeading" class="text-xs uppercase tracking-[2px] text-brand-muted font-semibold mb-6">Suggested for you</h4>
+                <div id="searchResults" class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="checkoutModal" class="fixed inset-0 bg-white/95 backdrop-blur z-[10000] hidden overflow-y-auto p-6 lg:p-16">
+        <div class="fixed top-8 right-8 text-4xl cursor-pointer text-brand-text hover:rotate-90 transition-transform font-light" onclick="closeAll()">×</div>
+        <div id="checkoutContent" class="max-w-[700px] mx-auto bg-white p-8 lg:p-12 shadow-glass border border-brand-border mt-12"></div>
+    </div>
+
+    <div id="bagSidebar" class="fixed top-0 right-[-100%] lg:right-[-450px] w-full lg:w-[450px] h-full z-[10002] transition-all duration-500 bg-white/95 backdrop-blur-xl border-l border-brand-border p-8 lg:p-12 flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.05)]">
+        <div class="flex justify-between items-center mb-8 border-b border-brand-border pb-6">
+            <h3 class="font-medium tracking-wide text-sm lg:text-base">YOUR BAG</h3>
+            <span onclick="toggleBag()" class="cursor-pointer text-3xl font-light hover:text-brand-muted">×</span>
+        </div>
+        <div id="bagItems" class="flex-grow overflow-y-auto pr-4 space-y-6 hide-scrollbar"></div>
+        <div class="border-t border-brand-border pt-8 mt-4">
+            <div class="flex justify-between mb-6 font-medium text-lg">
+                <span>TOTAL</span><span id="bagTotal">₱0.00</span>
+            </div>
+            <button class="w-full bg-brand-accent text-white py-4 text-sm font-semibold uppercase tracking-widest hover:opacity-90 transition-opacity" onclick="openCheckout()">Proceed to Checkout</button>
+        </div>
+    </div>
+
+    <div id="wishlistSidebar" class="fixed top-0 right-[-100%] lg:right-[-450px] w-full lg:w-[450px] h-full z-[10002] transition-all duration-500 bg-white/95 backdrop-blur-xl border-l border-brand-border p-8 lg:p-12 flex flex-col shadow-[-20px_0_50px_rgba(0,0,0,0.05)]">
+        <div class="flex justify-between items-center mb-8 border-b border-brand-border pb-6">
+            <h3 class="font-medium tracking-wide text-sm lg:text-base">SAVED ITEMS</h3>
+            <span onclick="toggleWishlist()" class="cursor-pointer text-3xl font-light hover:text-brand-muted">×</span>
+        </div>
+        <div id="wishlistItems" class="flex-grow overflow-y-auto pr-4 space-y-6 hide-scrollbar"></div>
+    </div>
+
+    <script type="module">
+        // ==========================================
+        // 1. GLOBAL FIREBASE INITIALIZATION
+        // ==========================================
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+        import { getFirestore, getDoc, getDocs, doc, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDnsilhjbCfdJvkqOohw_40F_xD_D97OQo",
+            authDomain: "formique-backend.firebaseapp.com",
+            projectId: "formique-backend",
+            storageBucket: "formique-backend.firebasestorage.app",
+            messagingSenderId: "1039018133322",
+            appId: "1:1039018133322:web:057c329ab797fee1c4e3b3",
+            measurementId: "G-NEBDNSBXYN"
+        };
+
+        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+        const db = getFirestore(app);
+
+        // ==========================================
+        // 2. GLOBAL STATE
+        // ==========================================
+        window.productsList = [];
+        window.cart = JSON.parse(localStorage.getItem('elites_bag')) || [];
+        window.wishlist = JSON.parse(localStorage.getItem('formique_likes')) || [];
+
+        // ==========================================
+        // 3. INITIALIZATION & DATA FETCHING
+        // ==========================================
+        async function init() {
+            try {
+                const cmsDoc = await getDoc(doc(db, "cms", "storefront"));
+                if (cmsDoc.exists()) {
+                    const cms = cmsDoc.data();
+                    if (cms.announcement_active) {
+                        const bar = document.getElementById('announcementBar');
+                        if (bar) {
+                            bar.innerText = cms.announcement_text;
+                            bar.style.display = 'block';
+                        }
+                    }
+                }
+
+                const querySnapshot = await getDocs(collection(db, "products"));
+                window.productsList = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })).sort((a,b) => (b.created_at || 0) - (a.created_at || 0));
+                
+                if (window.productsList.length > 0) {
+                    window.renderShopGrid('All');
+                    window.populateMegaMenu();
+                } else {
+                    const grid = document.getElementById('shopGrid');
+                    if (grid) grid.innerHTML = "<p class='col-span-full text-center py-16 text-brand-muted'>No products available yet.</p>"; 
+                }
+                
+                window.updateBagUI();
+                window.updateWishlistUI();
+            } catch (err) { 
+                console.error("Initialization error:", err); 
+                const grid = document.getElementById('shopGrid');
+                if (grid) grid.innerHTML = "<p class='col-span-full text-center py-16 text-brand-muted'>Error loading store. Please refresh.</p>"; 
+            }
+        }
+
+        // ==========================================
+        // 4. EVENT LISTENERS
+        // ==========================================
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            const menu = document.getElementById('megaMenu');
+            const search = document.getElementById('searchOverlay');
+            
+            if (nav) {
+                if (window.scrollY > 50 || (menu && menu.classList.contains('active')) || (search && search.classList.contains('active'))) {
+                    nav.classList.add('glass');
+                } else {
+                    nav.classList.remove('glass');
+                }
+            }
+            
+            const bottomNav = document.querySelector('.mobile-bottom-nav');
+            if (bottomNav) {
+                bottomNav.classList.add('scrolled-down'); 
+                if (window.scrollY === 0 && menu && menu.classList.contains('active')) {
+                    menu.classList.remove('active');
+                }
+            }
+        });
+
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('megaMenu');
+            const search = document.getElementById('searchOverlay');
+            
+            if (menu && menu.classList.contains('active') && !event.target.closest('.nav-item-wrap') && !event.target.closest('.m-nav-item') && !event.target.closest('#megaMenu')) {
+                menu.classList.remove('active');
+                document.querySelectorAll('.m-nav-item').forEach(el => el.classList.remove('active'));
+                const firstNav = document.querySelectorAll('.m-nav-item')[0];
+                if(firstNav) firstNav.classList.add('active');
+            }
+            if (search && search.classList.contains('active') && !event.target.closest('#searchOverlay') && !event.target.closest('.nav-icon') && !event.target.closest('.m-nav-item')) {
+                search.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // ==========================================
+        // 5. SHOP GRID & FILTERS (UPDATED HTML TEMPLATES)
+        // ==========================================
+        window.filterCategory = function(category, element) {
+            document.querySelectorAll('.filter-item').forEach(el => el.classList.remove('active'));
+            if(element) element.classList.add('active');
+            window.renderShopGrid(category);
+        }
+
+        window.renderShopGrid = function(category) {
+            const grid = document.getElementById('shopGrid');
+            if(!grid) return;
+            
+            const categoryMap = {
+                'Formal': 'Formal Attire', 'Business Casual': 'Business Casual',
+                'Office Siren': 'Office Siren', 'Cozy': 'Cozy Layering',
+                'Smart Casual': 'Smart Casual', 'Rainy Season': 'Rainy Office Attire',
+                'Summer Season': 'Summer Office Attire'
+            };
+
+            let filtered = window.productsList;
+            if (category !== 'All') {
+                const dbCategoryTarget = categoryMap[category] || category;
+                filtered = window.productsList.filter(p => p.category && p.category.toLowerCase() === dbCategoryTarget.toLowerCase());
+            }
+
+            if(filtered.length === 0) {
+                grid.innerHTML = "<p class='col-span-full text-center py-16 text-brand-muted'>No items found in this category.</p>"; 
+                return;
+            }
+
+            grid.innerHTML = filtered.map(p => {
+                const originalIndex = window.productsList.findIndex(item => item.id === p.id);
+                const isLiked = window.wishlist.some(id => String(id) === String(p.id)) ? 'liked' : '';
+                const stockStr = String(p.stock).toLowerCase().trim();
+                const isOutOfStock = stockStr === '0' || stockStr === 'out of stock' || stockStr === 'none';
+
+                return `
+                <div class="bestseller-card flex-none w-[85vw] lg:w-auto snap-center cursor-pointer group ${isOutOfStock ? 'out-of-stock-card' : ''}" onclick="window.openProduct(${originalIndex})">
+                    <div class="relative w-full aspect-[3/4] bg-gray-100 overflow-hidden">
+                        ${isOutOfStock ? `<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 px-6 py-2 text-xs font-semibold uppercase tracking-widest text-black z-20 text-center w-[80%]">Out of Stock</div>` : ''}
+                        <button class="btn-like absolute top-4 right-4 z-10 w-9 h-9 bg-white/80 backdrop-blur rounded-full flex items-center justify-center shadow hover:bg-white transition-all ${isLiked}" data-id="${p.id}" onclick="window.toggleLike(event, '${p.id}')" style="${isOutOfStock ? 'pointer-events: auto;' : ''}">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        </button>
+                        <img src="${p.thumbnail || ''}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                    </div>
+                    <div class="mt-4 flex justify-between items-start gap-4">
+                        <div class="flex flex-col gap-1">
+                            ${p.bestseller ? '<span class="text-[10px] text-brand-muted uppercase font-semibold tracking-wider">Best Seller</span>' : ''}
+                            <span class="text-sm font-medium text-brand-text leading-tight">${p.name}</span>
+                        </div>
+                        <span class="text-sm font-medium text-brand-text whitespace-nowrap">₱${parseFloat(p.price).toLocaleString()}</span>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ==========================================
+        // 6. UI TOGGLES & SEARCH (UPDATED HTML TEMPLATES)
+        // ==========================================
+        window.toggleMegaMenu = function(e) {
+            if(e) e.stopPropagation();
+            const menu = document.getElementById('megaMenu');
+            if(!menu) return;
+            menu.classList.toggle('active');
+        }
+
+        window.populateMegaMenu = function() {
+            const container = document.getElementById('megaMenuProducts');
+            if(!container || window.productsList.length === 0) return;
+            const shuffled = [...window.productsList].sort(() => 0.5 - Math.random());
+            const selected = shuffled.slice(0, 4);
+            
+            container.innerHTML = selected.map(p => {
+                const originalIndex = window.productsList.findIndex(item => item.id === p.id);
+                const stockStr = String(p.stock).toLowerCase().trim();
+                const isOutOfStock = stockStr === '0' || stockStr === 'out of stock' || stockStr === 'none';
+                return `
+                <div class="flex-none w-[65vw] lg:flex-1 snap-center cursor-pointer flex flex-col gap-2 group ${isOutOfStock ? 'out-of-stock-card' : ''}" onclick="window.openProduct(${originalIndex}); document.getElementById('megaMenu').classList.remove('active');">
+                    <div class="relative w-full aspect-[3/4] bg-gray-100 overflow-hidden rounded-sm">
+                        ${isOutOfStock ? `<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 px-4 py-2 text-[10px] font-semibold uppercase tracking-widest text-black z-20 text-center w-[90%]">Out of Stock</div>` : ''}
+                        <img src="${p.thumbnail || ''}" alt="${p.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                    </div>
+                    <span class="text-sm font-medium text-brand-text mt-2">${p.name}</span>
+                    <span class="text-xs text-brand-muted">₱${parseFloat(p.price).toLocaleString()}</span>
+                </div>`;
+            }).join('');
+        }
+
+        window.toggleSearch = function() {
+            const overlay = document.getElementById('searchOverlay');
+            if(!overlay) return;
+            
+            overlay.classList.toggle('active');
+            if(overlay.classList.contains('active')) {
+                setTimeout(() => document.getElementById('searchInput').focus(), 100);
+                document.getElementById('searchInput').value = '';
+                document.getElementById('searchHeading').innerText = "Suggested for you";
+                const shuffled = [...window.productsList].sort(() => 0.5 - Math.random());
+                window.renderSearchResults(shuffled.slice(0, 4));
+                document.body.style.overflow = 'hidden'; 
+            } else {
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        window.performSearch = function(e) {
+            const query = e.target.value.toLowerCase().trim();
+            if(!query) {
+                document.getElementById('searchHeading').innerText = "Suggested for you";
+                const shuffled = [...window.productsList].sort(() => 0.5 - Math.random());
+                window.renderSearchResults(shuffled.slice(0, 4));
+                return;
+            }
+            document.getElementById('searchHeading').innerText = "Top Results";
+            const filtered = window.productsList.filter(p => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query));
+            window.renderSearchResults(filtered.slice(0, 8));
+        }
+
+        window.renderSearchResults = function(items) {
+            const container = document.getElementById('searchResults');
+            if(!container) return;
+            
+            if(items.length === 0) {
+                container.innerHTML = `<p class="col-span-full text-sm text-brand-muted">No products found.</p>`;
+                return;
+            }
+            
+            container.innerHTML = items.map(p => {
+                const originalIndex = window.productsList.findIndex(item => item.id === p.id);
+                const stockStr = String(p.stock).toLowerCase().trim();
+                const isOutOfStock = stockStr === '0' || stockStr === 'out of stock' || stockStr === 'none';
+                return `
+                <div class="cursor-pointer flex flex-col gap-2 group ${isOutOfStock ? 'out-of-stock-card' : ''}" onclick="window.openProduct(${originalIndex}); document.getElementById('searchOverlay').classList.remove('active'); document.body.style.overflow = 'auto';">
+                    <div class="relative w-full aspect-[3/4] bg-gray-100 overflow-hidden rounded-sm">
+                        ${isOutOfStock ? `<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 px-4 py-2 text-[10px] font-semibold uppercase tracking-widest text-black z-20 text-center w-[90%]">Out of Stock</div>` : ''}
+                        <img src="${p.thumbnail || ''}" alt="${p.name}" class="w-full h-full object-cover">
+                    </div>
+                    <span class="text-sm font-medium text-brand-text mt-2">${p.name}</span>
+                    <span class="text-xs text-brand-muted">₱${parseFloat(p.price).toLocaleString()}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // ==========================================
+        // 7. WISHLIST & CART (BAG)
+        // ==========================================
+        window.toggleLike = function(e, productId) {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            const idStr = String(productId);
+            const index = window.wishlist.findIndex(id => String(id) === idStr);
+            if (index > -1) { window.wishlist.splice(index, 1); } else { window.wishlist.push(idStr); }
+            localStorage.setItem('formique_likes', JSON.stringify(window.wishlist));
+            
+            document.querySelectorAll(`.btn-like[data-id="${idStr}"]`).forEach(btn => {
+                if (index > -1) { btn.classList.remove('liked'); } else { btn.classList.add('liked'); }
+            });
+            window.updateWishlistUI();
+        }
+
+        window.toggleWishlist = function() {
+            document.getElementById('wishlistSidebar').classList.toggle('active');
+        }
+
+        window.updateWishlistUI = function() {
+            const countEl = document.getElementById('wishlistCount');
+            if(countEl) countEl.innerText = window.wishlist.length;
+            
+            const container = document.getElementById('wishlistItems');
+            if(!container) return;
+            
+            if(window.wishlist.length === 0) {
+                container.innerHTML = "<p class='text-brand-muted text-sm text-center mt-8'>You haven't saved any items yet.</p>";
+                return;
+            }
+            container.innerHTML = window.wishlist.map(id => {
+                const p = window.productsList.find(item => String(item.id) === String(id));
+                if(!p) return ''; 
+                const originalIndex = window.productsList.findIndex(item => String(item.id) === String(id));
+                return `
+                <div class="flex items-start gap-6 pb-6 border-b border-brand-border">
+                    <img src="${p.thumbnail || ''}" class="w-[90px] aspect-[3/4] object-cover cursor-pointer" onclick="window.openProduct(${originalIndex}); window.toggleWishlist();">
+                    <div class="flex-grow flex flex-col justify-between h-[120px]">
+                        <div class="flex justify-between items-start">
+                            <div class="cursor-pointer" onclick="window.openProduct(${originalIndex}); window.toggleWishlist();">
+                                <div class="font-medium text-sm text-brand-text mb-1">${p.name}</div>
+                                <div class="text-brand-muted text-xs uppercase tracking-wide">${p.category}</div>
+                            </div>
+                            <span onclick="window.toggleLike(event, '${p.id}')" class="cursor-pointer text-brand-muted text-2xl leading-none pl-2 hover:text-brand-accent">&times;</span>
+                        </div>
+                        <div class="font-medium text-base">₱${parseFloat(p.price).toLocaleString()}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.addToBag = function(index) {
+            const p = window.productsList[index];
+            let selectedSize = "Default";
+            let selectedColor = "Default";
+            const sizeEl = document.querySelector('.chip-item.selected');
+            const colorEl = document.querySelector('.color-dot.selected');
+            
+            if(sizeEl) selectedSize = sizeEl.innerText;
+            if(colorEl) selectedColor = colorEl.getAttribute('title');
+            
+            window.cart.push({ 
+                id: p.id, name: p.name, price: p.price, img: p.thumbnail, variant: `${selectedColor} / ${selectedSize}`, qty: 1 
+            });
+            localStorage.setItem('elites_bag', JSON.stringify(window.cart));
+            
+            window.updateBagUI();
+            window.toggleBag();
+        }
+
+        window.updateBagUI = function() {
+            const countEl = document.getElementById('bagCount');
+            if(countEl) countEl.innerText = window.cart.length;
+            const items = document.getElementById('bagItems');
+            if(!items) return;
+            
+            let total = 0;
+            items.innerHTML = window.cart.map((item, i) => {
+                total += parseFloat(item.price);
+                return `
+                <div class="flex items-start gap-6 pb-6 border-b border-brand-border">
+                    <img src="${item.img}" class="w-[80px] aspect-[3/4] object-cover">
+                    <div class="flex-grow flex flex-col justify-between h-full">
+                        <div>
+                            <div class="font-medium text-sm mb-1">${item.name}</div>
+                            <div class="text-brand-muted text-xs">${item.variant}</div>
+                        </div>
+                        <div class="flex justify-between items-center mt-4">
+                            <span class="font-medium">₱${parseFloat(item.price).toLocaleString()}</span>
+                            <span onclick="window.removeItem(${i})" class="cursor-pointer text-brand-muted text-xl hover:text-brand-accent leading-none">&times;</span>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            const totalEl = document.getElementById('bagTotal');
+            if(totalEl) totalEl.innerText = `₱${total.toLocaleString()}`;
+        }
+
+        window.removeItem = function(i) { 
+            window.cart.splice(i, 1); 
+            localStorage.setItem('elites_bag', JSON.stringify(window.cart)); 
+            window.updateBagUI(); 
+        }
+
+        window.toggleBag = function() { 
+            document.getElementById('bagSidebar').classList.toggle('active'); 
+        }
+
+        // ==========================================
+        // 8. PRODUCT PAGE (UPDATED HTML TEMPLATES)
+        // ==========================================
+        window.getCSSColor = function(colorStr) {
+            if (!colorStr) return '#000';
+            if (colorStr.startsWith('#') || colorStr.startsWith('rgb')) return colorStr;
+            const cMap = {
+                "navy blue": "#000080", "light blue": "#add8e6", "olive green": "#556b2f", "mustard": "#ffdb58",
+                "maroon": "#800000", "charcoal": "#36454F", "cream": "#FFFDD0", "peach": "#FFE5B4",
+                "teal": "#008080", "rust": "#b7410e", "khaki": "#c3b091", "off white": "#faf9f6"
+            };
+            let c = colorStr.toLowerCase().trim();
+            return cMap[c] ? cMap[c] : c.replace(/\s/g, ''); 
+        }
+
+        window.openProduct = function(index) {
+            const p = window.productsList[index];
+            if (!p) return;
+            
+            const shopMainView = document.getElementById('shopMainView');
+            if (shopMainView) shopMainView.style.display = 'none';
+            
+            document.getElementById('productPageView').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'instant' });
+            
+            const isLiked = window.wishlist.some(id => String(id) === String(p.id)) ? 'liked' : '';
+            const stockStr = String(p.stock).toLowerCase().trim();
+            const isOutOfStock = stockStr === '0' || stockStr === 'out of stock' || stockStr === 'none';
+            
+            let colorsHTML = '';
+            if (p.colors && p.colors.length > 0) {
+                colorsHTML = `<div class="flex flex-col gap-2"><span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Color</span><div class="flex flex-wrap gap-3">`;
+                colorsHTML += p.colors.map((c, idx) => {
+                    let colorName = c.name ? c.name : c;
+                    let bgColor = c.hex ? c.hex : window.getCSSColor(colorName);
+                    return `<div class="color-dot w-8 h-8 rounded-full border border-gray-300 cursor-pointer transition-transform hover:scale-110 ${idx===0?'selected':''}" style="background-color: ${bgColor};" title="${colorName}" onclick="window.selectOption(this, 'color')"></div>`;
+                }).join('');
+                colorsHTML += `</div></div>`;
+            }
+            
+            const standardSizes = ['S', 'M', 'L', 'XL', 'XXL'];
+            const availableSizes = (p.sizes || []).map(s => String(s).toUpperCase());
+            
+            let sizesHTML = `<div class="flex flex-col gap-2"><span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Size</span><div class="flex flex-wrap gap-2">`;
+            let firstAvailableFound = false;
+            
+            sizesHTML += standardSizes.map((s) => {
+                const isAvailable = availableSizes.includes(s);
+                let selectedClass = '';
+                if (isAvailable && !firstAvailableFound) { selectedClass = 'selected'; firstAvailableFound = true; }
+                const baseClasses = "chip-item border border-brand-border px-4 py-2 text-sm uppercase cursor-pointer transition-colors hover:bg-black hover:text-white hover:border-black";
+                const disabledClasses = "opacity-30 cursor-not-allowed line-through pointer-events-none bg-gray-50 text-gray-400";
+                
+                return `<div class="${baseClasses} ${isAvailable ? '' : disabledClasses} ${selectedClass}" ${isAvailable ? `onclick="window.selectOption(this, 'size')"` : ''}>${s}</div>`;
+            }).join('');
+            sizesHTML += `</div></div>`;
+            
+            let galleryHTML = `<img src="${p.thumbnail}" class="active w-20 aspect-[3/4] object-cover cursor-pointer border border-transparent opacity-50 hover:opacity-100 transition-opacity flex-shrink-0" onclick="window.swapMainImage(this)">`;
+            if(p.gallery && p.gallery.length > 0) {
+                galleryHTML += p.gallery.map(img => `<img src="${img}" class="w-20 aspect-[3/4] object-cover cursor-pointer border border-transparent opacity-50 hover:opacity-100 transition-opacity flex-shrink-0" onclick="window.swapMainImage(this)">`).join('');
+            }
+            
+            const actionButtonHTML = isOutOfStock 
+                ? `<button class="flex-grow bg-gray-200 text-gray-500 py-4 text-sm font-semibold uppercase tracking-widest cursor-not-allowed" disabled>Out of Stock</button>`
+                : `<button class="flex-grow bg-brand-text text-white py-4 text-sm font-semibold uppercase tracking-widest hover:bg-gray-800 transition-colors" onclick="window.addToBag(${index})">Add to Bag</button>`;
+                
+            const stockTextHTML = isOutOfStock
+                ? `<span class="text-red-500 mr-2 align-middle text-lg">✕</span> <span class="text-brand-muted">Out of Stock</span>`
+                : `<span class="text-green-600 mr-2 align-middle text-lg">✓</span> ${p.stock || 'In Stock'}`;
+
+            document.getElementById('ppContainer').innerHTML = `
+                <div class="flex flex-col-reverse lg:flex-row gap-4 lg:gap-6 lg:h-[70vh] lg:max-h-[650px] lg:sticky lg:top-[120px]">
+                    <div class="thumb-strip-vertical flex flex-row lg:flex-col gap-4 overflow-x-auto lg:overflow-y-auto hide-scrollbar lg:w-20 w-full">${galleryHTML}</div>
+                    <div class="flex-1 bg-gray-100 overflow-hidden flex items-center justify-center w-full aspect-[3/4] lg:aspect-auto">
+                        <img id="mainView" src="${p.thumbnail || ''}" alt="${p.name}" class="w-full h-full object-cover">
+                    </div>
+                </div>
+                
+                <div class="flex flex-col pt-4 lg:pt-0">
+                    <div class="text-xs uppercase tracking-wide text-brand-muted mb-6">Shop / ${p.category} / ${p.name}</div>
+                    <h1 class="font-serif text-4xl lg:text-5xl font-medium mb-3 leading-tight tracking-tight">${p.name}</h1>
+                    <div class="text-2xl font-normal mb-8">₱${parseFloat(p.price).toLocaleString()}</div>
+                    <p class="text-gray-600 text-sm leading-relaxed mb-8">${p.description || 'Elevate your wardrobe with this signature piece from the Sinagtala collection.'}</p>
+                    
+                    <div class="flex flex-wrap gap-10 mb-8 items-start">
+                        ${colorsHTML}
+                        ${sizesHTML}
+                    </div>
+                    
+                    <p class="text-sm text-brand-muted mb-6">${stockTextHTML}</p>
+                    <div class="flex gap-4 items-center mb-8">
+                        ${actionButtonHTML}
+                        <button class="btn-like w-[52px] h-[52px] rounded-full border border-brand-border flex items-center justify-center hover:border-black transition-colors flex-shrink-0 ${isLiked}" data-id="${p.id}" onclick="window.toggleLike(event, '${p.id}')">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+            window.renderSuggestedProducts(p.id);
+        }
+
+        window.closeProductPage = function() {
+            document.getElementById('productPageView').style.display = 'none';
+            const shopMainView = document.getElementById('shopMainView');
+            if (shopMainView) shopMainView.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+
+        window.swapMainImage = function(el) {
+            document.getElementById('mainView').src = el.src;
+            document.querySelectorAll('.thumb-strip-vertical img').forEach(img => img.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        window.selectOption = function(el, type) {
+            const siblings = el.parentElement.querySelectorAll(type === 'size' ? '.chip-item' : '.color-dot');
+            siblings.forEach(s => s.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        window.renderSuggestedProducts = function(currentId) {
+            const grid = document.getElementById('ppSuggestedGrid');
+            if (!grid) return;
+            
+            const shuffled = [...window.productsList].filter(p => String(p.id) !== String(currentId)).sort(() => 0.5 - Math.random());
+            const suggested = shuffled.slice(0, 4);
+            
+            grid.innerHTML = suggested.map(p => {
+                const originalIndex = window.productsList.findIndex(item => item.id === p.id);
+                const isLiked = window.wishlist.some(id => String(id) === String(p.id)) ? 'liked' : '';
+                const stockStr = String(p.stock).toLowerCase().trim();
+                const isOutOfStock = stockStr === '0' || stockStr === 'out of stock' || stockStr === 'none';
+                
+                return `
+                <div class="flex-none w-[75vw] lg:w-auto snap-center cursor-pointer group flex flex-col gap-3 ${isOutOfStock ? 'out-of-stock-card' : ''}" onclick="window.openProduct(${originalIndex})">
+                    <div class="relative w-full aspect-[3/4] bg-gray-100 overflow-hidden">
+                        ${isOutOfStock ? `<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 px-6 py-2 text-xs font-semibold uppercase tracking-widest text-black z-20 text-center w-[80%]">Out of Stock</div>` : ''}
+                        <button class="btn-like absolute top-4 right-4 z-10 w-9 h-9 bg-white/80 backdrop-blur rounded-full flex items-center justify-center shadow hover:bg-white transition-all ${isLiked}" data-id="${p.id}" onclick="window.toggleLike(event, '${p.id}')" style="${isOutOfStock ? 'pointer-events: auto;' : ''}">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        </button>
+                        <img src="${p.thumbnail || ''}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                    </div>
+                    <div class="flex justify-between items-start gap-4">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-medium text-brand-text leading-tight">${p.name}</span>
+                            <span class="text-xs text-brand-muted uppercase tracking-wide mt-1">${p.category}</span>
+                        </div>
+                        <span class="text-sm font-medium text-brand-text">₱${parseFloat(p.price).toLocaleString()}</span>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ==========================================
+        // 9. CHECKOUT
+        // ==========================================
+        window.openCheckout = function() {
+            if(window.cart.length === 0) return;
+            const modal = document.getElementById('checkoutModal');
+            const total = window.cart.reduce((s, i) => s + parseFloat(i.price), 0);
+            
+            const inputClasses = "w-full p-4 mb-6 bg-gray-50 border border-brand-border text-brand-text text-sm transition-colors focus:outline-none focus:border-brand-accent focus:bg-white";
+            const labelClasses = "block text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2";
+
+            document.getElementById('checkoutContent').innerHTML = `
+                <div>
+                    <h1 class="mb-4 text-4xl font-semibold">Checkout</h1>
+                    <p class="mb-10 text-brand-muted">Total amount: <span class="text-brand-accent font-semibold text-lg">₱${total.toLocaleString()}</span></p>
+                    <form id="orderForm">
+                        <span class="${labelClasses}">Contact Information</span>
+                        <input type="email" id="oEmail" class="${inputClasses}" placeholder="Email Address" required>
+                        
+                        <span class="${labelClasses} mt-4">Shipping Address</span>
+                        <input type="text" id="oName" class="${inputClasses}" placeholder="Full Name" required>
+                        <input type="text" id="oAddr" class="${inputClasses}" placeholder="Complete Address" required>
+                        
+                        <span class="${labelClasses} mt-4">Payment Method</span>
+                        <select id="oPay" class="${inputClasses}">
+                            <option value="GCash">GCash (Manual Transfer)</option>
+                            <option value="Maya">Maya (Manual Transfer)</option>
+                            <option value="COD">Cash on Delivery</option>
+                        </select>
+                        <button type="submit" class="w-full bg-brand-accent text-white py-4 mt-6 text-sm font-semibold uppercase tracking-widest hover:bg-gray-800 transition-colors">Complete Secure Purchase</button>
+                    </form>
+                </div>
+            `;
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            window.toggleBag();
+            
+            document.getElementById('orderForm').onsubmit = async (e) => {
+                e.preventDefault();
+                const btn = e.target.querySelector('button');
+                btn.innerText = "Processing Secure Purchase...";
+                btn.disabled = true;
+                btn.classList.add('opacity-70', 'cursor-not-allowed');
+
+                const customerEmail = document.getElementById('oEmail').value;
+                const customerName = document.getElementById('oName').value;
+
+                try {
+                    const docRef = await addDoc(collection(db, 'orders'), {
+                        customer_name: customerName,
+                        customer_email: customerEmail,
+                        customer_address: document.getElementById('oAddr').value,
+                        payment_method: document.getElementById('oPay').value,
+                        items: window.cart,
+                        total_price: total,
+                        status: 'pending_email_confirmation',
+                        created_at: Date.now() 
+                    });
+
+                    for (const item of window.cart) {
+                        const deductAmount = item.qty ? parseInt(item.qty) : 1; 
+                        const productRef = doc(db, "products", item.id);
+                        
+                        try {
+                            const snap = await getDoc(productRef);
+                            if (snap.exists()) {
+                                const currentStock = parseInt(snap.data().stock) || 0;
+                                let newStock = currentStock - deductAmount;
+                                if (newStock < 0) newStock = 0;
+                                await updateDoc(productRef, { stock: newStock });
+                            }
+                        } catch (stockError) {
+                            console.error("Failed to deduct stock for", item.name, stockError);
+                        }
+                    }
+
+                    const orderId = docRef.id;
+                    const shortOrderId = orderId.substring(0,8).toUpperCase();
+                    
+                    const templateParams = {
+                        to_email: customerEmail,
+                        to_name: customerName,
+                        order_id: shortOrderId,
+                        order_total: `₱${total.toLocaleString()}`,
+                        confirmation_link: `https://formique.vercel.app/confirm.html?order=${orderId}` 
+                    };
+
+                    const emailResponse = await fetch('/api/send-order-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(templateParams)
+                    });
+                    
+                    if (!emailResponse.ok) throw new Error("Backend failed to send email");
+                    
+                    document.getElementById('checkoutContent').innerHTML = `
+                        <div class="text-center py-16">
+                            <h2 class="font-serif text-4xl mb-4">Action Required</h2>
+                            <p class="text-brand-muted leading-relaxed mb-8 max-w-sm mx-auto">
+                                We have reserved your items and sent a verification email to <strong class="text-brand-text">${customerEmail}</strong>.<br><br>
+                                Please check your inbox to confirm your transaction and proceed to the verification step.
+                            </p>
+                            <button class="bg-white text-brand-text border border-brand-border py-4 px-8 text-sm font-semibold uppercase tracking-widest hover:bg-gray-50 transition-colors" onclick="window.closeAll(); location.reload();">Return to Store</button>
+                        </div>
+                    `;
+                    
+                    window.cart = []; 
+                    localStorage.removeItem('elites_bag');
+                    window.updateBagUI();
+
+                } catch (error) {
+                    console.error("Firebase Error:", error);
+                    alert("Order processing failed. Please check your connection.");
+                    btn.innerText = "Complete Secure Purchase";
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-70', 'cursor-not-allowed');
+                }
+            };
+        }
+
+        window.closeAll = function() {
+            document.getElementById('checkoutModal').style.display = 'none';
+            const bag = document.getElementById('bagSidebar');
+            if(bag) bag.classList.remove('active');
+            const wishlistSidebar = document.getElementById('wishlistSidebar');
+            if(wishlistSidebar) wishlistSidebar.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            
+            document.querySelectorAll('.m-nav-item').forEach(el => el.classList.remove('active'));
+            const firstNav = document.querySelectorAll('.m-nav-item')[0];
+            if(firstNav) firstNav.classList.add('active');
+        }
+
+        window.onload = () => setTimeout(init, 300);
+    </script>
+</body>
+</html>
