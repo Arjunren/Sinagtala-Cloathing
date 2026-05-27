@@ -1033,7 +1033,7 @@
                         to_name: customerName,
                         order_id: shortOrderId,
                         order_total: `₱${total.toLocaleString()}`,
-                        confirmation_link: `https://formique.vercel.app/confirm.html?order=${orderId}`
+                        confirmation_link: `https://sinagtala-one.vercel.app/confirm.html?order=${orderId}`
                     };
 
                     const emailResponse = await fetch('/api/send-order-email', {
